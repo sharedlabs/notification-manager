@@ -1,0 +1,59 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`notification-manager`
+
+warning, error, notify-warning
+
+@demo demo/index.html 
+-->
+
+<dom-module id="notification-manager">
+  <template>
+  </template>
+</dom-module>
+
+
+<script>
+(function() {
+  'use strict';
+
+  Polymer({
+
+    is: 'notification-manager',
+
+    properties: {
+
+      listenersTarget: {
+        type: Object,
+        value: document.body
+      }
+
+    },
+
+    created() {
+      this.addWarning = this.addWarning.bind(this);
+    },
+
+    ready() {
+      this._toggleListeners(true);
+    },
+
+    detached() {
+      this._toggleListeners(false);
+    },
+
+    addWarning() {
+
+    },
+
+    _toggleListeners(enable) {
+      const m = enable ? 'addEventListener' : 'removeEventListener';
+
+      this.listenersTarget[m]('notify-warning', this.addWarning);
+    },
+
+  });
+
+}());
+</script>
