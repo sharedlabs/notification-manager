@@ -4,14 +4,14 @@ A notification manager used to create notifications to be shown to the user.
 
 ### How it works
 
-Append the <notify-manager> element anywhere in the dom.
+Append the `notify-manager` element anywhere in the dom.
 By default it will listen to all notify events up to the document.
 
 ```html
 <notify-manager></notify-manager>
 ```
 
-Then in the javascript you can dispatch notify events.
+Then use javascript to dispatch notify events.
 
 ```js
 const notifyEvent = new CustomEvent('notify-error', {
@@ -25,7 +25,7 @@ const notifyEvent = new CustomEvent('notify-error', {
 this.dispatchEvent(notifyEvent);
 ```
 
-### Events listen
+### Event listen
 
 `notify-error`
 `notify-warning`
