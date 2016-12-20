@@ -1,15 +1,85 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../overlay-container/overlay-behavior.html">
 
 <!--
 `notification-manager`
 
-warning, error, notify-warning
-
 @demo demo/index.html 
 -->
 
-<dom-module id="notification-manager">
+<dom-module id="notification-overlay">
   <template>
+    <style>
+      :host {
+        font-size: 14px;
+        left: 8px;
+        line-height: 21px;
+        position: absolute;
+        right: 8px;
+        z-index: 1;
+        transition: top 0.225s cubic-bezier(0.165, 0.84, 0.44, 1);
+        will-change: transform, top;
+        @apply(--notification-overlay);
+
+        --notification-error-color-1: #FFCDD2;
+        --notification-error-color-2: #D32F2F;
+        --notification-error-color-3: #B71C1C;
+
+        --notification-warning-color-1: #FFE0B2;
+        --notification-warning-color-2: #F57C00;
+        --notification-warning-color-3: #E65100;
+
+        --notification-info-color-1: #EEEEEE;
+        --notification-info-color-2: #616161;
+        --notification-info-color-3: #212121;
+
+        --notification-success-color-1: #C8E6C9;
+        --notification-success-color-2: #388E3C;
+        --notification-success-color-3: #1B5E20;
+      }
+
+      @media(min-width: 640px) {
+        :host {
+          left: auto;
+          max-width: 640px;
+        }
+      }
+
+      #notification {
+        @apply(--layout-horizontal);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      #notification__type,
+      #notification__text,
+      #notification__close-icon {
+        padding: 12px;
+      }
+
+      #notification__close-icon {
+        min-width: 20px;
+        cursor: pointer;
+      }
+
+      #notification__text {
+        @apply(--layout-flex);
+      }
+    </style>
+
+    <div id="notification">
+      <div id="notification__type">
+        <svg id="notification__svg" style="width:24px; height:24px;" viewBox="0 0 24 24">
+          <path d$="[[_computeTypeSvgPath(type)]]" />
+        </svg>
+      </div>
+      <div id="notification__text">[[text]]</div>
+      <svg id="notification__close-icon" on-tap="_closeTapped" style="width:20px; height:20px;" viewBox="0 0 24 24">
+        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+      </svg>
+    </div>
+
   </template>
 </dom-module>
 
@@ -20,38 +90,120 @@ warning, error, notify-warning
 
   Polymer({
 
-    is: 'notification-manager',
+    is: 'notification-overlay',
+
+    behaviors: [
+      OverlayBehavior
+    ],
 
     properties: {
 
-      listenersTarget: {
-        type: Object,
-        value: document.body
+      type: {
+        type: String,
+        reflectToAttribute: true
+      },
+
+      text: String,
+
+      duration: {
+        type: Number,
+        value: Infinity
+      },
+
+      // @override
+      noCancelOnEscKey: {
+        type: Boolean,
+        value: true
+      },
+
+      // @override
+      noCancelOnPopState: {
+        type: Boolean,
+        value: true
       }
 
     },
 
-    created() {
-      this.addWarning = this.addWarning.bind(this);
+    listeners: {
+      'overlay-opened': '_overlayOpened',
+      'overlay-closed': '_overlayClosed'    
     },
 
-    ready() {
-      this._toggleListeners(true);
+    observers: [
+      '_typeChanged(type, isAttached)'
+    ],
+
+    _overlayOpened() {
+      requestAnimationFrame(_ => {
+        const animation = this.animate([
+          {opacity: 0, transform: 'translateY(20px)'}, 
+          {opacity: 1, transform: 'translateY(0)'}              
+        ], {
+          duration: 225,
+          easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'          
+        });
+
+        animation.onfinish = _ => {
+          this.focus();
+        };
+      });
+
+      // Set autoclose
+      if (this.duration !== Infinity && typeof this.duration === 'number') {
+        this.async(_ => {
+          this.opened = false;
+        }, this.duration);
+      }
     },
 
-    detached() {
-      this._toggleListeners(false);
+    _overlayClosed() {
+      this.style.display = '';
+
+      requestAnimationFrame(_ => {
+        const animation = this.animate([
+          {opacity: 1, transform: 'translateY(0)'},     
+          {opacity: 0, transform: 'translateY(20px)'}           
+        ], {
+          duration: 300,
+          easing: 'cubic-bezier(0.645, 0.045, 0.355, 1)'        
+        });
+
+        animation.onfinish = _ => {
+          this.remove();
+        };
+      });
     },
 
-    addWarning() {
+    _typeChanged(type) {
+      const color1 = this._styleProperties['--notification-' + type + '-color-1'];
+      const color2 = this._styleProperties['--notification-' + type + '-color-2'];
+      const color3 = this._styleProperties['--notification-' + type + '-color-3'];
 
+      this.$['notification'].style.background = color1;
+      this.$['notification'].style.color = color3;
+      this.$['notification__type'].style.background = color2;
+      this.$['notification__svg'].style.fill = color1;
+      this.$['notification__close-icon'].style.fill = color3;
     },
 
-    _toggleListeners(enable) {
-      const m = enable ? 'addEventListener' : 'removeEventListener';
-
-      this.listenersTarget[m]('notify-warning', this.addWarning);
+    _computeTypeSvgPath(type) {
+      if (type === 'error') {
+        return 'M11.71,19C9.93,19 8.5,17.59 8.5,15.86C8.5,14.24 9.53,13.1 11.3,12.74C13.07,12.38 14.9,11.53 15.92,10.16C16.31,11.45 16.5,12.81 16.5,14.2C16.5,16.84 14.36,19 11.71,19M13.5,0.67C13.5,0.67 14.24,3.32 14.24,5.47C14.24,7.53 12.89,9.2 10.83,9.2C8.76,9.2 7.2,7.53 7.2,5.47L7.23,5.1C5.21,7.5 4,10.61 4,14A8,8 0 0,0 12,22A8,8 0 0,0 20,14C20,8.6 17.41,3.8 13.5,0.67Z';
+      }
+      if (type === 'warning') {
+        return 'M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z';
+      }
+      if (type === 'info') {
+        return 'M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z';
+      }
+      if (type === 'success') {
+        return 'M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z';
+      }
     },
+
+    _closeTapped() {
+      this.opened = false;
+    }
 
   });
 

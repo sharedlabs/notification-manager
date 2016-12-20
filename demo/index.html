@@ -7,22 +7,44 @@
     <title>notification-manager demo</title>
 
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
-
-    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
-    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
     <link rel="import" href="../notification-manager.html">
 
-    <style is="custom-style" include="demo-pages-shared-styles">
+    <style is="custom-style">
+      body {
+        margin: 0;
+        font-family: sans-serif;
+      }
     </style>
   </head>
   <body>
-    <div class="vertical-section-container centered">
-      <h3>Basic notification-manager demo</h3>
-      <demo-snippet>
-        <template>
-          <notification-manager></notification-manager>
-        </template>
-      </demo-snippet>
-    </div>
+
+    <notification-manager></notification-manager>
+
+    <button onclick="notifyError()">Notify error</button>
+    <button onclick="notifyWarning()">Notify warning</button>
+    <button onclick="notifyInfo()">Notify info</button>
+    <button onclick="notifySuccess()">Notify success</button>
+
+    <script>
+
+      const manager = document.body.querySelector('notification-manager');
+
+      function notifyError() {
+        manager.fire('notify-error', {text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam tempor sem a erat eleifend, et commodo erat tempor. Nulla molestie purus id risus convallis dignissim.'});
+      }
+
+      function notifyWarning() {
+        manager.fire('notify-warning', {text: 'Praesent commodo, quam et pellentesque placera.'});
+      }
+
+      function notifyInfo() {
+        manager.fire('notify-info', {text: 'Vivamus mauris nisl.'});
+      }
+
+      function notifySuccess() {
+        manager.fire('notify-success', {text: 'Maecenas ut massa a nunc vestibulum ornare.', duration: 3000});
+      }
+
+    </script>
   </body>
 </html>

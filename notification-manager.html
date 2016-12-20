@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="notification-overlay.html">
 
 <!--
 `notification-manager`
@@ -13,7 +14,6 @@ warning, error, notify-warning
   </template>
 </dom-module>
 
-
 <script>
 (function() {
   'use strict';
@@ -27,12 +27,23 @@ warning, error, notify-warning
       listenersTarget: {
         type: Object,
         value: document.body
+      },
+
+      _overlays: {
+        type: Array,
+        value: _ => {
+          return [];
+        }
       }
 
     },
 
+    observers: [
+      '_overlaysChanged(_overlays.splices)'
+    ],
+
     created() {
-      this.addWarning = this.addWarning.bind(this);
+      this.notify = this.notify.bind(this);
     },
 
     ready() {
@@ -43,14 +54,57 @@ warning, error, notify-warning
       this._toggleListeners(false);
     },
 
-    addWarning() {
+    notify(event) {
+      const type = event.type.replace('notify-', '');
+      const text = event.detail.text;
+      const duration = event.detail.duration || Infinity;
 
+      const overlay = this.create('notification-overlay', {
+        type, text, duration,
+        onDetach: _ => {
+          this.splice('_overlays', this._overlays.indexOf(overlay), 1);
+        }
+      });
+
+      this.push('_overlays', overlay);
+      overlay.opened = true;
+    },
+
+    _overlaysChanged() {
+      this._positionizeOverlays();
+    },
+
+    _positionizeOverlays() {
+      this._updateRects();
+
+      this._overlays.forEach((overlay, index) => {
+        let top = 10;
+
+        if (index) {
+          let i = index;
+
+          while(i--) {
+            top += this._rects[i].height + 2;
+          }
+        }
+
+        overlay.style.top = top + 'px';
+      });
+    },
+
+    _updateRects() {
+      this._rects = this._overlays.map(overlay => {
+        return overlay.getBoundingClientRect();
+      });
     },
 
     _toggleListeners(enable) {
       const m = enable ? 'addEventListener' : 'removeEventListener';
 
-      this.listenersTarget[m]('notify-warning', this.addWarning);
+      this.listenersTarget[m]('notify-error', this.notify);
+      this.listenersTarget[m]('notify-warning', this.notify);
+      this.listenersTarget[m]('notify-info', this.notify);
+      this.listenersTarget[m]('notify-success', this.notify);
     },
 
   });
