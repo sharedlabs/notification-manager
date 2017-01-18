@@ -14,6 +14,10 @@
         margin: 0;
         font-family: sans-serif;
       }
+
+      notification-manager {
+        --notification-error-color-1: blue;
+      }
     </style>
   </head>
   <body>
@@ -29,20 +33,27 @@
 
       const manager = document.body.querySelector('notification-manager');
 
+      function fire(eventName, detail) {
+        manager.dispatchEvent(new CustomEvent(eventName, {
+          detail: detail,
+          bubbles: true
+        }));
+      }
+
       function notifyError() {
-        manager.fire('notify-error', {text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam tempor sem a erat eleifend, et commodo erat tempor. Nulla molestie purus id risus convallis dignissim.'});
+        fire('notify-error', {text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam tempor sem a erat eleifend, et commodo erat tempor. Nulla molestie purus id risus convallis dignissim.'});
       }
 
       function notifyWarning() {
-        manager.fire('notify-warning', {text: 'Praesent commodo, quam et pellentesque placera.'});
+        fire('notify-warning', {text: 'Praesent commodo, quam et pellentesque placera.'});
       }
 
       function notifyInfo() {
-        manager.fire('notify-info', {text: 'Vivamus mauris nisl.'});
+        fire('notify-info', {text: 'Vivamus mauris nisl.'});
       }
 
       function notifySuccess() {
-        manager.fire('notify-success', {text: 'Maecenas ut massa a nunc vestibulum ornare.', duration: 3000});
+        fire('notify-success', {text: 'Maecenas ut massa a nunc vestibulum ornare.', duration: 3000});
       }
 
     </script>
