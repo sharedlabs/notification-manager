@@ -55,6 +55,10 @@ warning, error, notify-warning
     },
 
     notify(event) {
+      if (event.defaultPrevented) {
+        return;
+      }
+
       const type = event.type.replace('notify-', '');
       const text = event.detail.text;
       const duration = event.detail.duration || Infinity;
