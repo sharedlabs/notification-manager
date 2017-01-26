@@ -27,14 +27,12 @@ warning, error, notify-warning
               type: Object,
               value: document.body
             },
-        
-            _ar: {
-              type: Array,
-              value: _ => {
-                return [];
-              }
+
+            disabled: {
+              type: Boolean,
+              value: false
             },
-            
+
             _overlays: {
               type: Array,
               value: _ => {
@@ -69,7 +67,7 @@ warning, error, notify-warning
       }
 
       notify(event) {
-        if (event.defaultPrevented) {
+        if (event.defaultPrevented || this.disabled) {
           return;
         }
 
