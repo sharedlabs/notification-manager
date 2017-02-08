@@ -1,4 +1,4 @@
-<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../polymer/polymer-element.html">
 <link rel="import" href="notification-overlay.html">
 
 <!--
@@ -12,111 +12,122 @@ warning, error, notify-warning
 <dom-module id="notification-manager">
   <template>
   </template>
-</dom-module>
 
-<script>
-(function() {
-  'use strict';
+  <script>
 
-  Polymer({
+    class NotificationManager extends Polymer.Element {
 
-    is: 'notification-manager',
+      static get is() {return 'notification-manager';}
 
-    properties: {
+      static get config() {
+        return {
+          properties: {
 
-      listenersTarget: {
-        type: Object,
-        value: document.body
-      },
+            listenersTarget: {
+              type: Object,
+              value: document.body
+            },
 
-      disabled: {
-        type: Boolean,
-        value: false
-      },
+            disabled: {
+              type: Boolean,
+              value: false
+            },
 
-      _overlays: {
-        type: Array,
-        value: _ => {
-          return [];
+            _overlays: {
+              type: Array,
+              value: _ => {
+                return [];
+              }
+            }
+
+          },
+
+          observers: [
+            '_overlaysChanged(_overlays.length)'
+          ]
+        };
+      }
+
+      constructor() {
+        super();
+        this.notify = this.notify.bind(this);
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+
+        requestAnimationFrame(_ => {
+          this._toggleListeners(true);
+        });
+      }
+
+      disconnectedCallback() {
+        this._toggleListeners(false);
+        super.disconnectedCallback();
+      }
+
+      notify(event) {
+        if (event.defaultPrevented || this.disabled) {
+          return;
         }
-      }
 
-    },
+        const type = event.type.replace('notify-', '');
+        const text = event.detail.text;
+        const duration = event.detail.duration || Infinity;
 
-    observers: [
-      '_overlaysChanged(_overlays.splices)'
-    ],
+        const overlay = document.createElement('notification-overlay')
+        overlay.type = type;
+        overlay.text = text;
+        overlay.duration = duration;
 
-    created() {
-      this.notify = this.notify.bind(this);
-    },
-
-    ready() {
-      this._toggleListeners(true);
-    },
-
-    detached() {
-      this._toggleListeners(false);
-    },
-
-    notify(event) {
-      if (event.defaultPrevented || this.disabled) {
-        return;
-      }
-
-      const type = event.type.replace('notify-', '');
-      const text = event.detail.text;
-      const duration = event.detail.duration || Infinity;
-
-      const overlay = this.create('notification-overlay', {
-        type, text, duration,
-        onDetach: _ => {
+        overlay.onDetach = _ => {
           this.splice('_overlays', this._overlays.indexOf(overlay), 1);
-        }
-      });
+        };
 
-      this.push('_overlays', overlay);
-      overlay.opened = true;
-    },
+        this.push('_overlays', overlay);
+        overlay.open();
+      }
 
-    _overlaysChanged() {
-      this._positionizeOverlays();
-    },
+     _toggleListeners(enable) {
+        const m = enable ? 'addEventListener' : 'removeEventListener';
 
-    _positionizeOverlays() {
-      this._updateRects();
+        this.listenersTarget[m]('notify-error', this.notify);
+        this.listenersTarget[m]('notify-warning', this.notify);
+        this.listenersTarget[m]('notify-info', this.notify);
+        this.listenersTarget[m]('notify-success', this.notify);
+      }
 
-      this._overlays.forEach((overlay, index) => {
-        let top = 10;
+      _overlaysChanged(changes) {
+        this._positionizeOverlays();
+      }
 
-        if (index) {
-          let i = index;
+      _positionizeOverlays() {
+        this._updateRects();
 
-          while(i--) {
-            top += this._rects[i].height + 4;
+        this._overlays.forEach((overlay, index) => {
+          let top = 10;
+
+          if (index) {
+            let i = index;
+
+            while(i--) {
+              top += this._rects[i].height + 4;
+            }
           }
-        }
 
-        overlay.style.top = top + 'px';
-      });
-    },
+          overlay.style.top = top + 'px';
+        });
+      }
 
-    _updateRects() {
-      this._rects = this._overlays.map(overlay => {
-        return overlay.getBoundingClientRect();
-      });
-    },
+      _updateRects() {
+        this._rects = this._overlays.map(overlay => {
+          return overlay.getBoundingClientRect();
+        });
+      }
 
-    _toggleListeners(enable) {
-      const m = enable ? 'addEventListener' : 'removeEventListener';
+    }
 
-      this.listenersTarget[m]('notify-error', this.notify);
-      this.listenersTarget[m]('notify-warning', this.notify);
-      this.listenersTarget[m]('notify-info', this.notify);
-      this.listenersTarget[m]('notify-success', this.notify);
-    },
+    customElements.define(NotificationManager.is, NotificationManager);
 
-  });
-
-}());
-</script>
+  </script>
+</dom-module>

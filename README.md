@@ -19,7 +19,9 @@ const notifyEvent = new CustomEvent('notify-error', {
   detail: {
     text: 'Error message',
     duration: Infinity
-  }
+  },
+  bubbles: true,
+  composed: true  
 });
 
 this.dispatchEvent(notifyEvent);
