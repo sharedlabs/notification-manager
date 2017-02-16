@@ -51,6 +51,7 @@ warning, error, notify-warning
       constructor() {
         super();
         this.notify = this.notify.bind(this);
+        this._notificationsReceived = new Map();
       }
 
       connectedCallback() {
@@ -74,6 +75,11 @@ warning, error, notify-warning
         const type = event.type.replace('notify-', '');
         const text = event.detail.text;
         const duration = event.detail.duration || Infinity;
+        const key = text + type;
+
+        // Ignore the same notification until it is closed
+        if (this._notificationsReceived.get(key)) {return;}
+        this._notificationsReceived.set(key, true);
 
         const overlay = document.createElement('notification-overlay')
         overlay.type = type;
@@ -82,6 +88,7 @@ warning, error, notify-warning
 
         overlay.onDetach = _ => {
           this.splice('_overlays', this._overlays.indexOf(overlay), 1);
+          this._notificationsReceived.delete(key);
         };
 
         this.push('_overlays', overlay);
