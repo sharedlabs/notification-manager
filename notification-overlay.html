@@ -89,40 +89,40 @@
 
       static get is() {return 'notification-overlay';}
 
-      static get config() {
+      static get properties() {
         return {
-          properties: {
 
-            type: {
-              type: String,
-              reflectToAttribute: true
-            },
-
-            text: String,
-
-            duration: {
-              type: Number,
-              value: Infinity
-            },
-
-            // @override
-            noCancelOnEscKey: {
-              type: Boolean,
-              value: true
-            },
-
-            // @override
-            noCancelOnPopState: {
-              type: Boolean,
-              value: true
-            }
-
+          type: {
+            type: String,
+            reflectToAttribute: true
           },
 
-          observers: [
-            '_typeChanged(type, isConnected)'
-          ]
+          text: String,
+
+          duration: {
+            type: Number,
+            value: Infinity
+          },
+
+          // @override
+          noCancelOnEscKey: {
+            type: Boolean,
+            value: true
+          },
+
+          // @override
+          noCancelOnPopState: {
+            type: Boolean,
+            value: true
+          }
+
         };
+      }
+
+      static get observers() {
+        return [
+          '_typeChanged(type, isConnected)'
+        ];
       }
 
       __openedChanged(opened, old) {

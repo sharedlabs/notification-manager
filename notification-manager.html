@@ -19,33 +19,33 @@ warning, error, notify-warning
 
       static get is() {return 'notification-manager';}
 
-      static get config() {
+      static get properties() {
         return {
-          properties: {
 
-            listenersTarget: {
-              type: Object,
-              value: document.body
-            },
-
-            disabled: {
-              type: Boolean,
-              value: false
-            },
-
-            _overlays: {
-              type: Array,
-              value: _ => {
-                return [];
-              }
-            }
-
+          listenersTarget: {
+            type: Object,
+            value: document.body
           },
 
-          observers: [
-            '_overlaysChanged(_overlays.length)'
-          ]
+          disabled: {
+            type: Boolean,
+            value: false
+          },
+
+          _overlays: {
+            type: Array,
+            value: _ => {
+              return [];
+            }
+          }
+
         };
+      }
+
+      static get observers() {
+        return [
+          '_overlaysChanged(_overlays.length)'
+        ];
       }
 
       constructor() {
