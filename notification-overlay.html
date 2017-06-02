@@ -1,12 +1,6 @@
 <link rel="import" href="../polymer/polymer-element.html">
 <link rel="import" href="../overlay-container/overlay-mixin.html">
 
-<!--
-`notification-manager`
-
-@demo demo/index.html
--->
-
 <dom-module id="notification-overlay">
   <template>
     <style>
@@ -14,12 +8,13 @@
         font-size: 14px;
         left: 8px;
         line-height: 21px;
+        outline: 0;
         position: absolute;
         right: 8px;
-        z-index: 1;
         transition: top 0.225s cubic-bezier(0.165, 0.84, 0.44, 1);
         will-change: transform, top;
-        @apply(--notification-overlay);
+        z-index: 1;
+        @apply --notification-overlay;
 
         --notification-error-color-1: #FFCDD2;
         --notification-error-color-2: #D32F2F;
@@ -72,11 +67,11 @@
     <div id="notification">
       <div id="notification__type">
         <svg id="notification__svg" style="width:24px; height:24px;" viewBox="0 0 24 24">
-          <path d$="[[_computeTypeSvgPath(type)]]" />
+          <path d$="[[__computeTypeSvgPath(type)]]" />
         </svg>
       </div>
       <div id="notification__text">[[text]]</div>
-      <svg id="notification__close-icon" on-click="_closeClicked" style="width:20px; height:20px;" viewBox="0 0 24 24">
+      <svg id="notification__close-icon" on-click="__closeOverlay" style="width:20px; height:20px;" viewBox="0 0 24 24">
         <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
       </svg>
     </div>
@@ -92,6 +87,22 @@
       static get properties() {
         return {
 
+          /**
+           * @override
+           */
+          noCancelOnEscKey: {
+            type: Boolean,
+            value: true
+          },
+
+          /**
+           * @override
+           */
+          noCancelOnPopState: {
+            type: Boolean,
+            value: true
+          },
+
           type: {
             type: String,
             reflectToAttribute: true
@@ -102,18 +113,6 @@
           duration: {
             type: Number,
             value: Infinity
-          },
-
-          // @override
-          noCancelOnEscKey: {
-            type: Boolean,
-            value: true
-          },
-
-          // @override
-          noCancelOnPopState: {
-            type: Boolean,
-            value: true
           }
 
         };
@@ -121,28 +120,14 @@
 
       static get observers() {
         return [
-          '_typeChanged(type, isConnected)'
+          '__typeChanged(type)'
         ];
       }
 
-      __openedChanged(opened, old) {
-        super.__openedChanged(opened, old);
-
+      _openedChanged(opened, old) {
+        super._openedChanged(opened, old);
         if (opened) {
-          requestAnimationFrame(_ => {
-            const animation = this.animate([
-              {opacity: 0, transform: 'translateY(20px)'}, 
-              {opacity: 1, transform: 'translateY(0)'}              
-            ], {
-              duration: 225,
-              easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'          
-            });
-
-            animation.onfinish = _ => {
-              this.focus();
-            };
-          });
-
+          requestAnimationFrame(_ => this.__animateIn());
           // Set autoclose
           if (this.duration !== Infinity && typeof this.duration === 'number') {
             setTimeout(_ => {
@@ -151,24 +136,37 @@
           }
         } else if (old) {
           this.style.display = '';
-
-          requestAnimationFrame(_ => {
-            const animation = this.animate([
-              {opacity: 1, transform: 'translateY(0)'},     
-              {opacity: 0, transform: 'translateY(20px)'}           
-            ], {
-              duration: 300,
-              easing: 'cubic-bezier(0.645, 0.045, 0.355, 1)'        
-            });
-
-            animation.onfinish = _ => {
-              this.remove();
-            };
-          });
+          requestAnimationFrame(_ => this.__animateOut());
         }
       }
 
-      _typeChanged(type) {
+      __animateIn() {
+        const animation = this.animate([
+          {opacity: 0, transform: 'translateY(20px)'}, 
+          {opacity: 1, transform: 'translateY(0)'}              
+        ], {
+          duration: 225,
+          easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'          
+        });
+        animation.onfinish = _ => {
+          this.focus();
+        };
+      }
+
+      __animateOut() {
+        const animation = this.animate([
+          {opacity: 1, transform: 'translateY(0)'},     
+          {opacity: 0, transform: 'translateY(20px)'}           
+        ], {
+          duration: 300,
+          easing: 'cubic-bezier(0.645, 0.045, 0.355, 1)'        
+        });
+        animation.onfinish = _ => {
+          this.remove();
+        };
+      }
+
+      __typeChanged(type) {
         this.$['notification'].style.background = `var(--notification-${type}-color-1)`;
         this.$['notification'].style.color = `var(--notification-${type}-color-3)`;
         this.$['notification__type'].style.background = `var(--notification-${type}-color-2)`;
@@ -176,7 +174,7 @@
         this.$['notification__close-icon'].style.fill = `var(--notification-${type}-color-3)`;
       }
 
-      _computeTypeSvgPath(type) {
+      __computeTypeSvgPath(type) {
         if (type === 'error') {
           return 'M11.71,19C9.93,19 8.5,17.59 8.5,15.86C8.5,14.24 9.53,13.1 11.3,12.74C13.07,12.38 14.9,11.53 15.92,10.16C16.31,11.45 16.5,12.81 16.5,14.2C16.5,16.84 14.36,19 11.71,19M13.5,0.67C13.5,0.67 14.24,3.32 14.24,5.47C14.24,7.53 12.89,9.2 10.83,9.2C8.76,9.2 7.2,7.53 7.2,5.47L7.23,5.1C5.21,7.5 4,10.61 4,14A8,8 0 0,0 12,22A8,8 0 0,0 20,14C20,8.6 17.41,3.8 13.5,0.67Z';
         }
@@ -191,7 +189,7 @@
         }
       }
 
-      _closeClicked() {
+      __closeOverlay() {
         this.opened = false;
       }
 

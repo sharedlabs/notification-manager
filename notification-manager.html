@@ -1,18 +1,7 @@
 <link rel="import" href="../polymer/polymer-element.html">
 <link rel="import" href="notification-overlay.html">
 
-<!--
-`notification-manager`
-
-warning, error, notify-warning
-
-@demo demo/index.html 
--->
-
 <dom-module id="notification-manager">
-  <template>
-  </template>
-
   <script>
 
     class NotificationManager extends Polymer.Element {
@@ -22,17 +11,12 @@ warning, error, notify-warning
       static get properties() {
         return {
 
-          listenersTarget: {
-            type: Object,
-            value: document.body
-          },
-
           disabled: {
             type: Boolean,
             value: false
           },
 
-          _overlays: {
+          __overlays: {
             type: Array,
             value: _ => {
               return [];
@@ -44,26 +28,26 @@ warning, error, notify-warning
 
       static get observers() {
         return [
-          '_overlaysChanged(_overlays.length)'
+          '__positionizeOverlays(__overlays.length)'
         ];
       }
 
       constructor() {
         super();
+        this.__rects = null;
+        this.__notificationsReceived = new Map();
         this.notify = this.notify.bind(this);
-        this._notificationsReceived = new Map();
       }
 
       connectedCallback() {
         super.connectedCallback();
-
         requestAnimationFrame(_ => {
-          this._toggleListeners(true);
+          this.__toggleListeners(true);
         });
       }
 
       disconnectedCallback() {
-        this._toggleListeners(false);
+        this.__toggleListeners(false);
         super.disconnectedCallback();
       }
 
@@ -71,63 +55,49 @@ warning, error, notify-warning
         if (event.defaultPrevented || this.disabled) {
           return;
         }
-
         const type = event.type.replace('notify-', '');
         const text = event.detail.text;
         const duration = event.detail.duration || Infinity;
         const key = text + type;
-
         // Ignore the same notification until it is closed
-        if (this._notificationsReceived.get(key)) {return;}
-        this._notificationsReceived.set(key, true);
-
+        if (this.__notificationsReceived.get(key)) {return;}
+        this.__notificationsReceived.set(key, true);
         const overlay = document.createElement('notification-overlay')
         overlay.type = type;
         overlay.text = text;
         overlay.duration = duration;
-
         overlay.onDetach = _ => {
-          this.splice('_overlays', this._overlays.indexOf(overlay), 1);
-          this._notificationsReceived.delete(key);
+          this.splice('__overlays', this.__overlays.indexOf(overlay), 1);
+          this.__notificationsReceived.delete(key);
         };
-
-        this.push('_overlays', overlay);
+        this.push('__overlays', overlay);
         overlay.open();
       }
 
-     _toggleListeners(enable) {
+     __toggleListeners(enable) {
         const m = enable ? 'addEventListener' : 'removeEventListener';
-
-        this.listenersTarget[m]('notify-error', this.notify);
-        this.listenersTarget[m]('notify-warning', this.notify);
-        this.listenersTarget[m]('notify-info', this.notify);
-        this.listenersTarget[m]('notify-success', this.notify);
+        document.body[m]('notify-error', this.notify);
+        document.body[m]('notify-warning', this.notify);
+        document.body[m]('notify-info', this.notify);
+        document.body[m]('notify-success', this.notify);
       }
 
-      _overlaysChanged(changes) {
-        this._positionizeOverlays();
-      }
-
-      _positionizeOverlays() {
+      __positionizeOverlays() {
         this._updateRects();
-
-        this._overlays.forEach((overlay, index) => {
+        this.__overlays.forEach((overlay, index) => {
           let top = 10;
-
           if (index) {
             let i = index;
-
             while(i--) {
-              top += this._rects[i].height + 4;
+              top += this.__rects[i].height + 4;
             }
           }
-
           overlay.style.top = top + 'px';
         });
       }
 
       _updateRects() {
-        this._rects = this._overlays.map(overlay => {
+        this.__rects = this.__overlays.map(overlay => {
           return overlay.getBoundingClientRect();
         });
       }
